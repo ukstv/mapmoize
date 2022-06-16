@@ -182,7 +182,7 @@ import { memoize } from "mampoize";
 import lru from 'lru_map'
 
 class MoreComplicatedFoo {
-  // We remember now the most recent 100 results.
+  // We remember now the most recently used 100 results.
   @memoize({
     argsCacheBuilder: () => new lru.LRUMap<string, any>(100)
   })
