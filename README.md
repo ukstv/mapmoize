@@ -1,7 +1,7 @@
 # mapmoize
 
 [![npm](https://img.shields.io/npm/v/mapmoize)](https://www.npmjs.com/package/mapmoize)
-![Test](https://github.com/ukstv/mapmoize/workflows/Test/badge.svg)
+![Test](https://img.shields.io/github/workflow/status/ukstv/mapmoize/Test)
 
 A memoize decorator for Typescript that uses `WeakMap`s to memoize results.
 
