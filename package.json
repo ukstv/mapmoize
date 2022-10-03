@@ -16,7 +16,7 @@
     "build": "tsc -p tsconfig.build.json",
     "test": "tsm ./node_modules/uvu/bin.js . src/__tests__/*.test.ts",
     "test:watch": "watchlist src -- pnpm run test",
-    "benchmark": "pnpm run build && node ./dist/__tests__/index.bench.js",
+    "benchmark": "tsm ./src/__tests__/index.bench.ts",
     "prepublishOnly": "rm -rf ./dist && pnpm run build"
   },
   "author": "Sergey Ukustov <sergey@ukstv.me>",
