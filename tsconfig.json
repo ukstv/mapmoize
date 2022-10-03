@@ -11,7 +11,8 @@
     "rootDir": "src",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "lib": ["es2021.weakref"]
+    "lib": ["es2021.weakref"],
+    "inlineSourceMap": true
   },
   "include": ["./src/**/*"]
 }
