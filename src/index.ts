@@ -64,7 +64,9 @@ export function memoize(params?: Partial<Params>): MethodDecorator {
         argsCacheBuilder
       );
     } else {
-      throw "Only put a memoize decorator on a method or get accessor.";
+      throw new Error(
+        "Only put a memoize decorator on a method or get accessor."
+      );
     }
   };
 }
