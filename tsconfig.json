@@ -2,22 +2,13 @@
   "compilerOptions": {
     "module": "ES2020",
     "target": "ES2020",
-    "resolveJsonModule": false,
-    "moduleResolution": "Node",
-    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "Node16",
     "declaration": true,
-    "declarationMap": true,
     "skipLibCheck": true,
     "removeComments": true,
-    "sourceMap": true,
     "strict": true,
     "outDir": "dist",
-    "rootDir": "src",
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "lib": [
-      "es2021.weakref"
-    ]
+    "rootDir": "src"
   },
   "include": ["./src/**/*"]
 }
