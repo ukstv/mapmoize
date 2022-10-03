@@ -1,6 +1,6 @@
 {
   "name": "mapmoize",
-  "version": "1.0.2-a.0",
+  "version": "1.0.2-a.1",
   "description": "Memoize decorator for TypeScript that uses WeakMap",
   "keywords": [
     "typescript",
@@ -13,7 +13,7 @@
     "lru-map"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && swc ./src/index.ts -o ./dist/index.js",
+    "build": "tsc -p tsconfig.build.json",
     "test": "tsm ./node_modules/uvu/bin.js . src/__tests__/*.test.ts",
     "test:watch": "watchlist src -- pnpm run test",
     "benchmark": "pnpm run build && node ./dist/__tests__/index.bench.js",
