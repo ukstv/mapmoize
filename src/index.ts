@@ -47,7 +47,7 @@ export function memoize(params?: Partial<Params>): MethodDecorator {
   const argsCacheBuilder =
     (params && params.argsCacheBuilder) || defaultArgsCacheBuilder;
   return (
-    target: Object,
+    target: object,
     propertyKey: string | symbol,
     descriptor: TypedPropertyDescriptor<any>
   ) => {
@@ -71,18 +71,13 @@ export function memoize(params?: Partial<Params>): MethodDecorator {
 export const Memoize = memoize;
 
 type ArgsCache = MapLike<string, any>;
-type BindingsCache = WeakMap<object, ArgsCache>;
-const functionsCache = new WeakMap<Function, BindingsCache>();
-const gettersCache = new WeakMap<Function, WeakMap<object, any>>();
 
 function buildFunctionWrapper(
   originalMethod: (...args: unknown[]) => unknown,
   hashFunction: HashFunction,
   argsCacheBuilder: ArgsCacheBuilder
 ) {
-  const bindingsCache: BindingsCache =
-    functionsCache.get(originalMethod) ||
-    functionsCache.set(originalMethod, new WeakMap()).get(originalMethod)!;
+  const bindingsCache = new WeakMap<object, ArgsCache>();
 
   // The function returned here gets called instead of originalMethod.
   return function (this: any, ...args: any[]) {
@@ -99,16 +94,14 @@ function buildFunctionWrapper(
 }
 
 function buildGetterWrapper(originalMethod: (...args: unknown[]) => unknown) {
-  const bindingsCache =
-    gettersCache.get(originalMethod) ||
-    gettersCache.set(originalMethod, new WeakMap()).get(originalMethod)!;
-
+  const bindings = new WeakMap<object, any>();
   // The function returned here gets called instead of originalMethod.
   return function (this: any) {
-    let memoized = bindingsCache.get(this);
-    if (memoized) return memoized;
-    memoized = originalMethod.apply(this);
-    bindingsCache.set(this, memoized);
+    let memoized = bindings.get(this);
+    if (!memoized) {
+      memoized = originalMethod.apply(this);
+      bindings.set(this, memoized);
+    }
     return memoized;
   };
 }
