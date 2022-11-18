@@ -14,7 +14,7 @@ _Heavily_ inspired by [typescript-memoize](https://github.com/darrylhodgins/type
 npm install --save mapmoize
 ```
 
-## Usage:
+## Usage
 
 ```typescript
 @Memoize(params?: {hashFunction?: (...args: any[]) => any})
@@ -180,15 +180,45 @@ like [lru-map](https://www.npmjs.com/package/lru_map):
 
 ```typescript
 import { memoize } from "mampoize";
-import lru from 'lru_map'
+import lru from "lru_map";
 
 class MoreComplicatedFoo {
   // We remember now the most recently used 100 results.
   @memoize({
-    argsCacheBuilder: () => new lru.LRUMap<string, any>(100)
+    argsCacheBuilder: () => new lru.LRUMap<string, any>(100),
   })
   public getBetterGreeting(name: string, planet: string) {
     return "Hello, " + name + "! Welcome to " + planet;
   }
 }
 ```
+
+# How it works
+
+General notion of memoization is simple: calculate a value the first time a call is made, and reuse it forever,
+instead of recalculating on each call. The main question is where to store the memoized value.
+
+A decorator provided in the package is for class methods and getters only. Internally they are both functions,
+as a class in JS is a syntactic sugar.
+
+We could attach a memoized value to an instance of the function. That naive approach would lead to errors and confusion.
+Class methods are not _bound_ to the class instance. The binding, i.e. providing `this`, happens through a syntax convention.
+If we have a class `A` with a method `foo`, and an instance `a1` of the class, `a1.foo()` is an equivalent of `a1.foo.call(a1)`:
+`this` inside `foo` is set to `a1`.
+
+Instead of using the class method syntax, we can try to use the function directly: `const c = a1.foo; c()`. We shall see,
+that `this` inside `foo` is not defined. `a1.foo` has no intrinsic knowledge about the instance `a1`.
+
+It is clear now, if we try to attach a memoized value to a class method, treated as a function, we would share the memoized value
+across all instances of the class. This is an error.
+
+What we should do instead is to attach a memoized value to a unique pair `(function, instance)`.
+And, we should make sure, that if `instance` or `function` gets garbage collected, our memoized value is gone too.
+For this we use `WeakMap`, linked to an instance of a function we decorate. Keys there are all the instances.
+If we decorate a method, values there are `Map<string, any>`, where `string` here is a "digest"
+of the method arguments, and `any` - is the result of the method for the arguments passed.
+If we decorate a getter, we store actual values in the `WeakMap`.
+
+Here is a more visual description of the hierarchy:
+- `method -> WeakMap(instance -> Map(arguments -> value))`
+- `getter -> WeakMap(instance -> value)`.
