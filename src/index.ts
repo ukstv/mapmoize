@@ -52,17 +52,13 @@ export function memoize(params?: Partial<Params>): MethodDecorator {
     descriptor: TypedPropertyDescriptor<any>
   ) => {
     if (descriptor.value) {
-      descriptor.value = buildMemoizationWrapper(
+      descriptor.value = buildFunctionWrapper(
         descriptor.value,
         hashFunction,
         argsCacheBuilder
       );
     } else if (descriptor.get) {
-      descriptor.get = buildMemoizationWrapper(
-        descriptor.get,
-        hashFunction,
-        argsCacheBuilder
-      );
+      descriptor.get = buildGetterWrapper(descriptor.get);
     } else {
       throw new Error("Decorate only a method or get accessor");
     }
@@ -77,12 +73,9 @@ export const Memoize = memoize;
 type ArgsCache = MapLike<string, any>;
 type BindingsCache = WeakMap<object, ArgsCache>;
 const functionsCache = new WeakMap<Function, BindingsCache>();
+const gettersCache = new WeakMap<Function, WeakMap<object, any>>();
 
-/**
- * Use WeakMap to store memoized values.
- * Class methods are unbound: `new A().foo === new A().foo`. We can not
- */
-function buildMemoizationWrapper(
+function buildFunctionWrapper(
   originalMethod: (...args: unknown[]) => unknown,
   hashFunction: HashFunction,
   argsCacheBuilder: ArgsCacheBuilder
@@ -97,9 +90,25 @@ function buildMemoizationWrapper(
     const argsCache =
       bindingsCache.get(this) ||
       bindingsCache.set(this, argsCacheBuilder()).get(this)!;
-    if (!argsCache.has(digest)) {
-      argsCache.set(digest, originalMethod.apply(this, args));
-    }
-    return argsCache.get(digest);
+    let memoized = argsCache.get(digest);
+    if (memoized) return memoized;
+    memoized = originalMethod.apply(this, args);
+    argsCache.set(digest, memoized);
+    return memoized;
+  };
+}
+
+function buildGetterWrapper(originalMethod: (...args: unknown[]) => unknown) {
+  const bindingsCache =
+    gettersCache.get(originalMethod) ||
+    gettersCache.set(originalMethod, new WeakMap()).get(originalMethod)!;
+
+  // The function returned here gets called instead of originalMethod.
+  return function (this: any) {
+    let memoized = bindingsCache.get(this);
+    if (memoized) return memoized;
+    memoized = originalMethod.apply(this);
+    bindingsCache.set(this, memoized);
+    return memoized;
   };
 }
