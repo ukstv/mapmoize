@@ -1,6 +1,6 @@
 {
   "name": "mapmoize",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Memoize decorator for TypeScript that uses WeakMap",
   "keywords": [
     "typescript",
