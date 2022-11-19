@@ -1,18 +1,12 @@
-/**
- * Build arguments digest.
- */
-export type HashFunction = (...args: any[]) => string;
+import { ArgsCacheBuilder, HashFunction, Strategy } from "./ancillary.js";
+import { isGetterDescriptor, memoizeGetter } from "./getter.js";
+import { isMethodDescriptor, memoizeMethod } from "./method.js";
 
-export type MapLike<K, V> = {
-  get(key: K): V | undefined;
-  has(key: K): boolean;
-  set(key: K, value: V): ThisType<MapLike<K, V>>;
-};
-
-export type ArgsCacheBuilder = () => MapLike<string, any>;
+export * from "./ancillary.js";
 
 export type Params = {
   hashFunction: HashFunction;
+  strategy: Strategy;
   argsCacheBuilder: ArgsCacheBuilder;
 };
 
@@ -22,10 +16,6 @@ function defaultDigest(...args: any[]) {
     result += `${args[i]}$!$`;
   }
   return result;
-}
-
-function defaultArgsCacheBuilder() {
-  return new Map<string, any>();
 }
 
 /**
@@ -41,27 +31,39 @@ function defaultArgsCacheBuilder() {
  *   }
  * }
  * ```
+ *
+ * For getters specifically:
+ * - `hashFunction` is not used,
+ * - you could specify alternative strategy for memoization.
+ *
+ * By default we use WeakMap to memoize results. If passed `strategy` property is `Strategy.REPLACE`,
+ * then after the first value calculation, we _replace_ the getter property with the value.
  */
 export function memoize(params?: Partial<Params>): MethodDecorator {
-  const hashFunction = (params && params.hashFunction) || defaultDigest;
-  const argsCacheBuilder =
-    (params && params.argsCacheBuilder) || defaultArgsCacheBuilder;
+  const hashFunction: HashFunction = params?.hashFunction || defaultDigest;
+  const strategy: Strategy = params?.strategy || Strategy.WEAKMAP;
+  const argsCacheBuilder: ArgsCacheBuilder =
+    params?.argsCacheBuilder || (() => new Map());
   return (
-    target: Object,
+    target: object,
     propertyKey: string | symbol,
     descriptor: TypedPropertyDescriptor<any>
   ) => {
-    if (descriptor.value) {
-      descriptor.value = buildFunctionWrapper(
-        descriptor.value,
+    if (isMethodDescriptor(descriptor)) {
+      memoizeMethod(
+        descriptor,
+        propertyKey,
+        strategy,
         hashFunction,
         argsCacheBuilder
       );
-    } else if (descriptor.get) {
-      descriptor.get = buildGetterWrapper(descriptor.get);
-    } else {
-      throw new Error("Decorate only a method or get accessor");
+      return;
     }
+    if (isGetterDescriptor(descriptor)) {
+      memoizeGetter(descriptor, propertyKey, strategy);
+      return;
+    }
+    throw new Error("Decorate only a method or get accessor");
   };
 }
 
@@ -69,46 +71,3 @@ export function memoize(params?: Partial<Params>): MethodDecorator {
  * Alias for +memoize+ decorator.
  */
 export const Memoize = memoize;
-
-type ArgsCache = MapLike<string, any>;
-type BindingsCache = WeakMap<object, ArgsCache>;
-const functionsCache = new WeakMap<Function, BindingsCache>();
-const gettersCache = new WeakMap<Function, WeakMap<object, any>>();
-
-function buildFunctionWrapper(
-  originalMethod: (...args: unknown[]) => unknown,
-  hashFunction: HashFunction,
-  argsCacheBuilder: ArgsCacheBuilder
-) {
-  const bindingsCache: BindingsCache =
-    functionsCache.get(originalMethod) ||
-    functionsCache.set(originalMethod, new WeakMap()).get(originalMethod)!;
-
-  // The function returned here gets called instead of originalMethod.
-  return function (this: any, ...args: any[]) {
-    const digest = hashFunction.apply(this, args);
-    const argsCache =
-      bindingsCache.get(this) ||
-      bindingsCache.set(this, argsCacheBuilder()).get(this)!;
-    let memoized = argsCache.get(digest);
-    if (memoized) return memoized;
-    memoized = originalMethod.apply(this, args);
-    argsCache.set(digest, memoized);
-    return memoized;
-  };
-}
-
-function buildGetterWrapper(originalMethod: (...args: unknown[]) => unknown) {
-  const bindingsCache =
-    gettersCache.get(originalMethod) ||
-    gettersCache.set(originalMethod, new WeakMap()).get(originalMethod)!;
-
-  // The function returned here gets called instead of originalMethod.
-  return function (this: any) {
-    let memoized = bindingsCache.get(this);
-    if (memoized) return memoized;
-    memoized = originalMethod.apply(this);
-    bindingsCache.set(this, memoized);
-    return memoized;
-  };
-}

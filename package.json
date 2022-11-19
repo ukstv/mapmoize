@@ -1,6 +1,6 @@
 {
   "name": "mapmoize",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Memoize decorator for TypeScript that uses WeakMap",
   "keywords": [
     "typescript",
@@ -14,10 +14,10 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "test": "tsm ./node_modules/uvu/bin.js . src/__tests__/*.test.ts",
+    "test": "tsm ./node_modules/uvu/bin.js . src/.+\\.test\\.ts",
     "test:watch": "watchlist src -- pnpm run test",
     "size-limit": "size-limit",
-    "benchmark": "tsm ./src/__tests__/index.bench.ts",
+    "benchmark": "tsm ./src/__tests__/getter.bench.ts && tsm ./src/__tests__/function.bench.ts",
     "prepublishOnly": "rm -rf ./dist && pnpm run build"
   },
   "author": "Sergey Ukustov <sergey@ukstv.me>",
