@@ -1,6 +1,6 @@
 {
   "name": "mapmoize",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Memoize decorator for TypeScript that uses WeakMap",
   "keywords": [
     "typescript",
@@ -39,8 +39,8 @@
   "exports": {
     ".": {
       "import": {
-        "default": "./dist/index.js",
-        "types": "./dist/index.d.ts"
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
       }
     },
     "./package.json": "./package.json"
